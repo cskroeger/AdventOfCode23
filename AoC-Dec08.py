@@ -20,31 +20,26 @@ def parse_data(file, sep="\n"):
     
     inst = list(str_list[0])
     for i in inst:
-        if (i == 'L'):
-            instructions.append(0)
-        else:
-            instructions.append(1)
+        instructions.append(0 if (i == 'L') else 1)
+    
     str_list.pop(0)
     str_list.pop(0)
+    
     for s in str_list:
-        mm = re.search("([A-Z0-9]+) = \(([A-Z0-9]+), ([A-Z0-9]+)\)", s)
+        mm = re.search("(\w+) = \((\w+), (\w+)\)", s)
         mapp[mm.group(1)] = [mm.group(2), mm.group(3)]
 
 
 def solve_puzzle_p1(inp, part2=False):
     ''' Find path to done for an individual value '''
-    global mapp
     idx = 0       # Current index of the instruction list.  Rolls over
     counter = 0   # Number of steps to reach solution
     max_idx = len(instructions)
     key = inp
     while not key.endswith('Z' if part2 else 'ZZZ'):
         key = mapp[key][instructions[idx]]
-        counter = counter+1
-        if (idx == max_idx-1):
-            idx = 0
-        else:
-            idx += 1
+        counter += 1
+        idx = 0 if (idx == max_idx-1) else idx+1
     return counter
 
 
@@ -52,7 +47,6 @@ def solve_puzzle_p2():
     ''' Start from all paths that end in 'A' simultaneously, then for each path search for its solution,
     where a soln ends in 'Z'.  This would take a really long time using a search methodology.  But since
     paths are cyclical, solve for each path and find the Least Common Multiple.'''
-    global mapp
     start = [i for i in mapp.keys() if i.endswith('A')]
     print("  Part 2 starting positions:", start)
     steps = [solve_puzzle_p1(i, True) for i in start]
