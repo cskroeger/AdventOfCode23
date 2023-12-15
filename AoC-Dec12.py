@@ -25,8 +25,7 @@ configs = {}
 def find_matches(strg, groups):
     global configs
     lst = '_'.join([str(i) for i in groups])
-    if (strg + lst) in configs:
-        #print("CONFIGS LOOKUP \'{}\' = {}".format(strg+lst, configs[strg + lst]))
+    if (strg + lst) in configs:  # If this pattern has been seen, lookup and return the result
         return configs[strg + lst]
     
     num_possibilities = 0
@@ -40,7 +39,7 @@ def find_matches(strg, groups):
     else:
         match = False
     
-    if match and not (len(strg) > n and strg[n] == '#'):    # Found a match!
+    if match and not (len(strg) > n and strg[n] == '#'):    # Found a match! And next char isn't a #
         new_grp = groups[1::]   # Reduce groups by 1 and search for remaining solution
         if len(strg) > n+1 and new_grp != []:
             fm = find_matches(strg[n+1:], new_grp)
@@ -55,7 +54,7 @@ def find_matches(strg, groups):
     
     return num_possibilities
 
-# Part 2
+# Part 2: duplicate the record and numbers 5x each
 def unfold_records(record, nums):
     record += ("?" + record) * 4
     nums *= 5
@@ -67,7 +66,6 @@ def parse_data(file, part2=False):
     total_arrangements = 0
     with open(file, "r") as f:
         for line in f:
-            configs.clear()
             record, nums = line.strip().split(" ")
             nums = list(nums.split(","))
             nums = [int(i) for i in nums]
@@ -79,8 +77,8 @@ def parse_data(file, part2=False):
             if total_arrangements == 0:
                 print("ERROR: no arrangements found.  Exiting.")
                 quit()
+            configs.clear()
     return total_arrangements
-    print(record)
 
 
 if __name__ == "__main__":
