@@ -55,7 +55,8 @@ def unfold_records(record, nums):
 
 
 def parse_data(file, part2=False):
-    ''' '''
+    ''' Advent of Code 2023: Day 12, Hot Springs.
+    Parse input file and decode it line by line, adding the resulting possible arrangements and returning the sum of them. '''
     total_arrangements = 0
     with open(file, "r") as f:
         for line in f:
@@ -65,11 +66,11 @@ def parse_data(file, part2=False):
             if part2:
                 record, nums = unfold_records(record, nums)
             line_arrangements = find_matches(record, nums)
-            total_arrangements += line_arrangements
             print(record, nums, "=> Arrangements:", line_arrangements)
-            if total_arrangements == 0:
+            if line_arrangements == 0:
                 print("ERROR: no arrangements found.  Exiting.")
                 quit()
+            total_arrangements += line_arrangements
             configs.clear()
     return total_arrangements
 
