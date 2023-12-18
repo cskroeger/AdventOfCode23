@@ -42,16 +42,11 @@ def find_matches(strg, groups):
             num_possibilities += 1
     
     if len(strg) > 1 and strg[0] != '#':  # cannot bypass #s; they must be consumed
-        num_possibilities += find_matches(strg[1:], groups)
+        fm = find_matches(strg[1:], groups)
+        configs[strg[1:] + ''.join([str(i) for i in groups])] = fm
+        num_possibilities += fm
     
     return num_possibilities
-
-
-# Part 2: duplicate the record and numbers 5x each
-def unfold_records(record, nums):
-    record += ("?" + record) * 4
-    nums *= 5
-    return record, nums
 
 
 def parse_data(file, part2=False):
@@ -63,8 +58,9 @@ def parse_data(file, part2=False):
             record, nums = line.strip().split(" ")
             nums = list(nums.split(","))
             nums = [int(i) for i in nums]
-            if part2:
-                record, nums = unfold_records(record, nums)
+            if part2:  # duplicate the record and numbers 5x/ea
+                record += ("?" + record) * 4
+                nums *= 5
             line_arrangements = find_matches(record, nums)
             print(record, nums, "=> Arrangements:", line_arrangements)
             if line_arrangements == 0:
