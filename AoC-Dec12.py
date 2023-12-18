@@ -24,35 +24,28 @@ configs = {}
 # ???????????# 3,1,1,3
 def find_matches(strg, groups):
     global configs
-    lst = '_'.join([str(i) for i in groups])
+    lst = ''.join([str(i) for i in groups])
     if (strg + lst) in configs:  # If this pattern has been seen, lookup and return the result
         return configs[strg + lst]
     
     num_possibilities = 0
     n = groups[0]        # Length of current group.  We must have this many ? or # in a row
-    if len(strg) >= n:
-        match = True
-        for i in range(n):
-            if strg[i] != '#' and strg[i] != '?':
-                match = False
-                break
-    else:
-        match = False
+    match = re.search(r"^[#?]{%d}" %(n), strg[:n])
     
     if match and not (len(strg) > n and strg[n] == '#'):    # Found a match! And next char isn't a #
         new_grp = groups[1::]   # Reduce groups by 1 and search for remaining solution
         if len(strg) > n+1 and new_grp != []:
             fm = find_matches(strg[n+1:], new_grp)
-            configs[strg[n+1:] + '_'.join([str(i) for i in new_grp])] = fm
+            configs[strg[n+1:] + ''.join([str(i) for i in new_grp])] = fm
             num_possibilities += fm
         elif (new_grp == [] and re.search(r"#", strg[n:]) == None):  # Ensure no #s were left behind
             num_possibilities += 1
-            configs[strg + '_' + str(groups[0])] = 1
     
     if len(strg) > 1 and strg[0] != '#':  # cannot bypass #s; they must be consumed
         num_possibilities += find_matches(strg[1:], groups)
     
     return num_possibilities
+
 
 # Part 2: duplicate the record and numbers 5x each
 def unfold_records(record, nums):
