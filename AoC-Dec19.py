@@ -97,7 +97,6 @@ def trace_paths(workflows, state):
                 yield from trace_paths(workflows, (target, cons_true))
 
 
-
 def get_min_max(op, n, lo, hi):
     match op:
         case '>':  lo = max(lo, n+1)
@@ -106,6 +105,7 @@ def get_min_max(op, n, lo, hi):
         case '<=': hi = min(hi, n)
         case _: raise ValueError
     return lo,hi
+
 
 def get_ranges(var,op,n,xl,xh,ml,mh,al,ah,sl,sh):
     match var:
@@ -122,7 +122,7 @@ def get_ranges(var,op,n,xl,xh,ml,mh,al,ah,sl,sh):
 # https://github.com/jonathanpaulson/AdventOfCode/blob/master/2023/19.py
 def part2():
     running_sum = 0
-    stack = deque([('in', 1, 4000, 1, 4000, 1, 4000, 1, 4000)])
+    stack = deque([('in', 1, MAXVAL, 1, MAXVAL, 1, MAXVAL, 1, MAXVAL)])
     while stack:
         state,xl,xh,ml,mh,al,ah,sl,sh = stack.pop()
         #print(state,xl,xh,ml,mh,al,ah,sl,sh,running_sum)
