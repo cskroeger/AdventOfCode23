@@ -97,7 +97,8 @@ def trace_paths(workflows, state):
                 yield from trace_paths(workflows, (target, cons_true))
 
 
-def new_min_max(op, n, lo, hi):
+
+def get_min_max(op, n, lo, hi):
     match op:
         case '>':  lo = max(lo, n+1)
         case '<':  hi = min(hi, n-1)
@@ -106,29 +107,26 @@ def new_min_max(op, n, lo, hi):
         case _: raise ValueError
     return lo,hi
 
-def new_ranges(var,op,n,xl,xh,ml,mh,al,ah,sl,sh):
+def get_ranges(var,op,n,xl,xh,ml,mh,al,ah,sl,sh):
     match var:
-        case 'x': xl,xh = new_min_max(op, n, xl, xh)
-        case 'm': ml,mh = new_min_max(op, n, ml, mh)
-        case 'a': al,ah = new_min_max(op, n, al, ah)
-        case 's': sl,sh = new_min_max(op, n, sl, sh)
+        case 'x': xl,xh = get_min_max(op, n, xl, xh)
+        case 'm': ml,mh = get_min_max(op, n, ml, mh)
+        case 'a': al,ah = get_min_max(op, n, al, ah)
+        case 's': sl,sh = get_min_max(op, n, sl, sh)
         case _: raise ValueError
     return xl,xh,ml,mh,al,ah,sl,sh
 
 
-# Credit to Jonathan Paulson for this algorithm.  I struggled with it and
-# looked at several solutions and ended up 'leveraging' a variation of his:
+# Credit to Jonathan Paulson for 'part2' algorithm.  After my solution didn't work
+# out, I looked at several others and ended up 'leveraging' a variation of his:
 # https://github.com/jonathanpaulson/AdventOfCode/blob/master/2023/19.py
 def part2():
     running_sum = 0
-    Q = deque([('in', 1, 4000, 1, 4000, 1, 4000, 1, 4000)])
-    while Q:
-        state, xl,xh,ml,mh,al,ah,sl,sh = Q.pop()
-        #print(state, xl, xh, ml, mh, al, ah, sl, sh, running_sum)
-        if xl>xh or ml>mh or al>ah or sl>sh:
-            continue
-        
-        if state == 'R':
+    stack = deque([('in', 1, 4000, 1, 4000, 1, 4000, 1, 4000)])
+    while stack:
+        state,xl,xh,ml,mh,al,ah,sl,sh = stack.pop()
+        #print(state,xl,xh,ml,mh,al,ah,sl,sh,running_sum)
+        if state == 'R' or xl>xh or ml>mh or al>ah or sl>sh:
             continue
         elif state == 'A':
             running_sum += (xh-xl+1)*(mh-ml+1)*(ah-al+1)*(sh-sl+1)
@@ -137,10 +135,10 @@ def part2():
             for cmd in workflows[state]:
                 if len(cmd) > 1:
                     typ, op, num, nextmap = cmd
-                    Q.append((nextmap, *new_ranges(typ, op, num, xl, xh, ml, mh, al, ah,sl, sh)))
-                    xl,xh,ml,mh,al,ah,sl,sh = new_ranges(typ, '<=' if op=='>' else '>=', num, xl, xh, ml, mh, al, ah,sl, sh)
+                    stack.append((nextmap, *get_ranges(typ,op,num,xl,xh,ml,mh,al,ah,sl,sh)))
+                    xl,xh,ml,mh,al,ah,sl,sh = get_ranges(typ, '<=' if op=='>' else '>=', num,xl,xh,ml,mh,al,ah,sl,sh)
                 else:
-                    Q.append((cmd[0], xl, xh, ml, mh, al, ah, sl, sh))
+                    stack.append((cmd[0], xl, xh, ml, mh, al, ah, sl, sh))
                     break
     return running_sum
 
