@@ -6,11 +6,12 @@
 #--------------------------------------------
 import sys
 from collections import deque
+from math import lcm
 
-modules = {}   # 'name' -> Obj pointer: references the modules (class instances) described in the input file
+_modules_ = {} # 'name' -> Obj pointer: references the modules (class instances) described in the input file
 Q = deque()    # Use a queue to keep pulses in the correct order
-_rx_pulses = 0
-_debug = 0
+_rx_pulses_ = 0
+_debug_ = 0
 
 class Day20Obj:
     """ Base Class for Day 20 objects, defining common variables"""
@@ -45,7 +46,7 @@ class FlipFlop(Day20Obj):
                 self.state = 'on'
                 for d in self.downstream:
                     self.high_pulse_cnt += 1
-                    if _debug:
+                    if _debug_:
                         print("{} --> high to {}.  FF State = {}".format(self.__name__, d, self.state))
                     Q.appendleft([self.__name__, d, 'high'])
                     
@@ -53,7 +54,7 @@ class FlipFlop(Day20Obj):
                 self.state = 'off'
                 for d in self.downstream:
                     self.low_pulse_cnt += 1
-                    if _debug:
+                    if _debug_:
                         print("{} --> low to {}.  FF State = {}".format(self.__name__, d, self.state))
                     Q.appendleft([self.__name__, d, 'low'])
                     
@@ -71,26 +72,25 @@ class Conjuntion(Day20Obj):
             self.upstream[sender] = 'low'
         
     def send_pulse(self, sender, ptype):
-        global _rx_pulses
+        global _rx_pulses_
         self.upstream[sender] = ptype
         for d in self.downstream:
+            if d == 'rx' and 'high' in self.upstream.values():  # there will only be 1 high at a time
+                _rx_pulses_ += 1
+            
             if 'low' in self.upstream.values():
                 self.high_pulse_cnt += 1
-                if _debug:
+                if _debug_:
                     print("{} --> high to {}".format(self.__name__, d))
-                if d in modules:
+                if d in _modules_:
                     Q.appendleft([self.__name__, d, 'high'])
-                elif d == 'rx':
-                    _rx_pulses += 1
             else:
                 self.low_pulse_cnt += 1
-                if _debug:
+                if _debug_:
                     print("{} --> low to {}".format(self.__name__, d))
-                if d in modules:
+                if d in _modules_:
                     Q.appendleft([self.__name__, d, 'low'])
-                elif d == 'rx':
-                    _rx_pulses += 1
-
+    
 
 class Broadcast(Day20Obj):
     """ Broadcasts received pulse to all downstream connected modules """
@@ -100,7 +100,7 @@ class Broadcast(Day20Obj):
                 self.low_pulse_cnt += 1
             else:
                 self.high_pulse_cnt += 1
-            if _debug:
+            if _debug_:
                 print("{} --> {} to {}".format(self.__name__, ptype, d))
             Q.appendleft([self.__name__, d, ptype])
             
@@ -109,19 +109,19 @@ def count_pulses(button_pushes):
     low_pulse_cnt = button_pushes # every button push sends a low pulse to the broadcaster
     high_pulse_cnt = 0
     
-    for m in modules:
-        lpc, hpc = modules[m].get_pulse_cnt()
+    for m in _modules_:
+        lpc, hpc = _modules_[m].get_pulse_cnt()
         low_pulse_cnt += lpc
         high_pulse_cnt += hpc
     
-    print("Low pulse count: {}, High pulse count: {}".format(low_pulse_cnt, high_pulse_cnt))
-    print("Total # Pulses: {}".format(low_pulse_cnt*high_pulse_cnt))
+    print("P1 Button Pushes: {}, Low pulse count: {}, High pulse count: {}".format
+             (button_pushes, low_pulse_cnt, high_pulse_cnt))
+    print("P1: Total # Pulses: {}".format(low_pulse_cnt*high_pulse_cnt))
     return low_pulse_cnt*high_pulse_cnt
 
 
 def init_system():
-    ''' Returns the contents of the input file in a list '''
-    global modules
+    global _modules_
     with open(sys.argv[1], "r") as f:
         connections = f.read().strip().split("\n")
 
@@ -131,49 +131,59 @@ def init_system():
         dest = dest_list[0].split(",")
         dest = [i.strip() for i in dest]
         if mod == "broadcaster":
-            x = Broadcast("broadcaster", dest)
-            modules["broadcaster"] = x
+            _modules_["broadcaster"] = Broadcast("broadcaster", dest)
         elif mod[0] == '&':
-            x = Conjuntion(mod[1:], dest)
-            modules[mod[1:]] = x
+            _modules_[mod[1:]] = Conjuntion(mod[1:], dest)
             conjunctions.append(mod[1:])
         elif mod[0] == '%':
-            x = FlipFlop(mod[1:], dest)
-            modules[mod[1:]] = x
+            _modules_[mod[1:]] = FlipFlop(mod[1:], dest)
         else:
             raise ValueError
     
     # Initialize the conjunctions with their upstream senders
-    for key in modules:
-        for d in modules[key].list_downstream():
+    for key in _modules_:
+        for d in _modules_[key].list_downstream():
             if d in conjunctions:
-                modules[d].add_sender(key)
+                _modules_[d].add_sender(key)
 
 
-def push_button(cnt, part2=False):
-    """ Send "cnt" number of button pushes to the Broadcaster module using data connected modules """
-    global _rx_pulses
+def push_button(cnt):
+    """ Send "cnt" number of button pushes to the Broadcaster module """
     print("Pushing button (up to) {} time(s)".format(cnt))
+    last_rx_pulse = _rx_pulses_
+    rx_feeders = []
+    
     for i in range(cnt):
-        _rx_pulses = 0
-        if _debug:
+        if _debug_:
             print("Button --> low to broadcaster")
         
         Q.appendleft(["button", "broadcaster", "low"])
         while Q:
             src, dest, ptype = Q.pop()
-            modules[dest].send_pulse(src, ptype)
+            _modules_[dest].send_pulse(src, ptype)
         
-        if _rx_pulses == 1:
-            print("Saw a single pulse sent to rx module! Button pushes = {}".format(i+1))
-            break
-        elif _debug:
-            print("Button Presses={}, RX Pulses={}".format(i+1, _rx_pulses))
+        if i == 1000:
+            count_pulses(i)
+        
+        if _rx_pulses_ != last_rx_pulse:
+            rx_feeders.append(i+1)
+            last_rx_pulse = _rx_pulses_
+            if _debug_:
+                print("Saw a pulse sent to rx module! Button pushes = {}".format(i+1))
+            # For Part 2, there are four upstream modules from the module sending to rx.
+            # When all of them have last sent a low, the module will also send a low.  Find the
+            # least common multiple of the 4 sending blocks in lieu of waiting for it to happen.
+            if len(rx_feeders) == 4:
+                ans = 1
+                for i in rx_feeders:
+                    ans = lcm(ans, i)
+                print("P2: {} button presses is the fewest to get a single low pulse to rx".format(ans))
+                break
 
 
 if __name__ == "__main__":
-    _debug = 0
-    N = 1000
+    _debug_ = 0
+    N = 100000
     init_system()
     push_button(N)
-    count_pulses(N)
+    
