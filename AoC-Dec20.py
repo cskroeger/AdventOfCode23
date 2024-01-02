@@ -19,9 +19,7 @@ class Day20Obj:
         self.__name__ = name
         self.low_pulse_cnt = 0
         self.high_pulse_cnt = 0
-        self.downstream = []  # downstream modules to send data to
-        for i in conn_list:
-            self.downstream.append(i)
+        self.downstream = conn_list  # downstream modules to send data to
     
     def list_downstream(self):
         return self.downstream
